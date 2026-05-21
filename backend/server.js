@@ -26,6 +26,7 @@ app.use(express.json());
 // =============================
 // ROUTES
 // =============================
+
 app.use("/api/chat", chatRoutes);
 
 // =============================
@@ -36,18 +37,8 @@ app.get("/", (req, res) => {
     res.send("FizNPine AI Backend is Running...");
 });
 
-
 // =============================
-// PORT
-// =============================
-
-const PORT = process.env.PORT || 5000;
-
-
-// =============================
-// START SERVER
+// EXPORT APP FOR VERCEL
 // =============================
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+module.exports = app;
