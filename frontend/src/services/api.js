@@ -2,13 +2,12 @@ import axios from "axios";
 
 // Create axios instance
 const API = axios.create({
-    baseURL: "http://localhost:5000/api",
+    baseURL: "https://fiz-n-pine-ai-1ptd.vercel.app/api",
 });
 
 // Send message to backend
 export const sendMessageToAI = async (message, personality) => {
     try {
-
         const response = await API.post("/chat", {
             message,
             personality

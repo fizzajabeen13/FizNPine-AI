@@ -1,6 +1,5 @@
 const { generateAIResponse } = require("../services/aiService");
 
-// Generate prompt based on personality
 const generatePrompt = (message, personality) => {
 
     const basePrompts = {
@@ -19,27 +18,41 @@ User: ${message}
 `;
 };
 
-// Controller
 const chatController = async (req, res) => {
 
     try {
 
-        const { message, personality } = req.body;
+        const { message, personality = "friendly" } = req.body || {};
+
+        if (!message) {
+            return res.status(400).json({
+                success: false,
+                message: "Message is required"
+            });
+        }
 
         console.log("User Message:", message);
         console.log("Personality:", personality);
 
-        // Create prompt
         const prompt = generatePrompt(message, personality);
 
-        // Send to AI
-        const aiReply = await generateAIResponse(prompt);
+        let aiReply;
 
-       const cleanReply = aiReply;
+        try {
+            aiReply = await generateAIResponse(prompt);
+        } catch (aiError) {
+            console.log("AI SERVICE ERROR:", aiError);
+
+            return res.status(500).json({
+                success: false,
+                message: "AI service failed",
+                error: aiError.message
+            });
+        }
 
         res.json({
             success: true,
-            reply: cleanReply
+            reply: aiReply
         });
 
     } catch (error) {
@@ -48,7 +61,8 @@ const chatController = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Server Error"
+            message: "Server Error",
+            error: error.message
         });
     }
 };
