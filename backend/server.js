@@ -38,6 +38,18 @@ app.get("/", (req, res) => {
 });
 
 // =============================
+// LOCAL SERVER
+// =============================
+
+if (require.main === module) {
+    const PORT = process.env.PORT || 5000;
+
+    app.listen(PORT, () => {
+        console.log(`FizNPine AI Backend running on port ${PORT}`);
+    });
+}
+
+// =============================
 // EXPORT APP FOR VERCEL
 // =============================
 

@@ -6,7 +6,7 @@ const router = express.Router();
 
 
 // Import controller
-const { chatController } = require("../controllers/chatController");
+const { chatController, titleController } = require("../controllers/chatController");
 
 
 // =============================
@@ -14,6 +14,7 @@ const { chatController } = require("../controllers/chatController");
 // =============================
 
 router.post("/", chatController);
+router.post("/title", titleController);
 
 
 // Export router

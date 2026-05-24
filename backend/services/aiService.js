@@ -1,48 +1,91 @@
 require("dotenv").config();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const { GoogleGenAI } = require("@google/genai");
 
-// ✅ System prompt (this fixes “forgot name/personality” issue)
-const systemPrompt = `
+const MODEL_NAME = "gemini-flash-latest";
+
+const systemInstruction = `
 You are FizNPine AI.
 Your name is FizNPine.
-You are a helpful, intelligent, and friendly AI assistant built into a chatbot system.
-Always maintain this identity in every response.
-Be consistent and do not change your personality.
+You are a helpful, intelligent, friendly assistant built for a student chatbot project.
+Keep answers clear, useful, and age-appropriate.
+If the user asks for medical, legal, or financial advice, provide safe general guidance and suggest consulting a qualified professional.
+IMPORTANT: Do NOT start your messages with "As FizNPine AI" or introduce yourself repeatedly. Just answer naturally.
 `;
 
-const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-pro",
-});
+const getClient = () => {
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY is not configured on the backend.");
+    }
+
+    return new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY
+    });
+};
+
+const extractText = (response) => {
+    if (typeof response.text === "string") {
+        return response.text.trim();
+    }
+
+    if (typeof response.text === "function") {
+        return response.text().trim();
+    }
+
+    const parts =
+        response.candidates?.[0]?.content?.parts
+            ?.map((part) => part.text)
+            .filter(Boolean) || [];
+
+    return parts.join("\n").trim();
+};
 
 const generateAIResponse = async (prompt) => {
+    const ai = getClient();
+
+    let response;
+
     try {
-
-        console.log("🟡 USER PROMPT:", prompt);
-
-        // ✅ FIX: send system prompt + user prompt together
-        const result = await model.generateContent([
-            systemPrompt,
-            prompt
-        ]);
-
-        const response = await result.response;
-        const text = response.text();
-
-        console.log("🟢 AI RESPONSE:", text);
-
-        return text;
-
+        response = await ai.models.generateContent({
+            model: MODEL_NAME,
+            contents: prompt,
+            config: {
+                systemInstruction,
+                temperature: 0.7
+            }
+        });
     } catch (error) {
+        const message = [
+            error?.message,
+            error?.status,
+            error?.code,
+            error?.toString?.(),
+            JSON.stringify(error)
+        ].filter(Boolean).join(" ");
 
-        console.log("🔴 GEMINI ERROR:");
-        console.log(error);
+        if (
+            message.toLowerCase().includes("leaked") ||
+            message.toLowerCase().includes("permission_denied") ||
+            message.toLowerCase().includes("permission denied") ||
+            message.includes("PERMISSION_DENIED") ||
+            message.includes("\"code\":403")
+        ) {
+            throw new Error("Gemini rejected this API key because it was reported as leaked. Rotate it in Google AI Studio and update backend/.env.");
+        }
 
-        return "AI error occurred. Please try again.";
+        throw new Error("Gemini request failed. Check the backend API key and quota.");
     }
+
+    const text = extractText(response);
+
+    if (!text) {
+        throw new Error("Gemini returned an empty response.");
+    }
+
+    return text;
 };
 
 module.exports = {
-    generateAIResponse
+    generateAIResponse,
+    MODEL_NAME
 };

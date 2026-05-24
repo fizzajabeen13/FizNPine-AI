@@ -1,11 +1,10 @@
 import axios from "axios";
 
-// Create axios instance
 const API = axios.create({
-    baseURL: "https://fiz-n-pine-ai-1ptd.vercel.app/api",
+    baseURL: "http://localhost:5000/api",
+    timeout: 30000
 });
 
-// Send message to backend
 export const sendMessageToAI = async (message, personality) => {
     try {
         const response = await API.post("/chat", {
@@ -14,13 +13,24 @@ export const sendMessageToAI = async (message, personality) => {
         });
 
         return response.data;
-
     } catch (error) {
-        console.error("API Error:", error);
+        const serverMessage =
+            error.response?.data?.reply ||
+            error.response?.data?.message ||
+            "Server not responding. Please try again.";
 
         return {
             success: false,
-            reply: "Server not responding"
+            reply: serverMessage
         };
+    }
+};
+
+export const generateChatTitle = async (message) => {
+    try {
+        const response = await API.post("/chat/title", { message });
+        return response.data;
+    } catch (error) {
+        return { success: false, title: "New Chat" };
     }
 };
